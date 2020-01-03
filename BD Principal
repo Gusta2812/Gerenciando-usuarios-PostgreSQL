@@ -1,0 +1,377 @@
+/*
+Conceito de relacionamento com o gerenciamento de usuários e permissões de acesso ao SGBD.
+
+É importante o controle de acesso diferente para cada papel de usuário no sistema, a primeira
+missão é segurança da informação que protege, e com isso é utilizado vários instrumento:
+	- backup e recuperação de dados bem elaborada e executada protegerá a organização, contra perda
+	de informação, devido a falhas de hardware, defeitos de softwares, erros humanos, intrusos entre outros...
+Para manter sigilo das informações e realizarem auditoria, pode se usar o recurso dos gatilhos.
+E além disso existe uma linguagem especial para o controle de acesso e permissão aos dados, conhecida como
+DLC(Data Control Language).
+*/
+
+CREATE USER nome [ [WITH] opção[...]]
+/*
+OPÇÕES que podem ser utilizadas;
+Nome: nome do usuário
+Id do usuário: identificador do usuário
+-----------------------------------------------------------------------------------------------------------------
+CREATEDB (específico): Define a permissão para o usuário criar seu próprio banco de dados. 
+NOCREATEDB (especificado): Nega ao usuário a permissão de criar banco de dados
+-----------------------------------------------------------------------------------------------------------------
+CREATEUSER: Torna um usuário um super-usuário, no qual pode passar por todas as restrições de acesso.
+NOCREATEUSER: O padrão
+-----------------------------------------------------------------------------------------------------------------
+Nome do grupo: grupo onde o usuario será incluído como novo membro
+Senha: Define a senha do usuário, ela pode ser mudada usando o comando ALTER USER
+Data/hora: VALID UNTIL define uma data e hora na qual a senha do usuário não é mais válida. Caso não seja omitida, será válida para sempre
+*/
+
+/*
+Esse comando remove o usuário especifico. Mas o comando não remove as tabelas, visões ou 
+outros objetos do usuário. Caso isso aconteça aparecerá uma mensagem de erro.
+*/
+DROP USER nome_usuario
+
+/*
+Para remover um usuário que possui um BD, primeiro remove o banco de dados ou alterando o dono
+*/
+ALTER USER nome [[WITH] opção[...]]
+/*
+OPÇÃO que podem ser utilizadas;
+Nome: nome do usuário no qual atributos estão sendo alterados.
+CREATEDB (específico): Define a permissão para o usuário criar seu próprio banco de dados. 
+NOCREATEDB (especificado): Nega ao usuario a permissão de criar banco de dados
+-----------------------------------------------------------------------------------------------------------------
+CREATEUSER: Torna um usuário um super-usuário, no qual pode passar por todas as restrições de acesso.
+NOCREATEUSER: O padrão
+-----------------------------------------------------------------------------------------------------------------
+ENCRYPTED: Controla se a senha é armazenada criptografada ou não, em pg_shadow
+UNENCRYPTED: sem criptografia
+-----------------------------------------------------------------------------------------------------------------
+Data/Hora: Expiração da senha do usuário. Para fazer que senha nunca expira deve ser utilizado 'infinity'
+Novo nome: novo nome do usuário
+-----------------------------------------------------------------------------------------------------------------
+Parâmetro valor: Define o valor fornecido como padrão para o parâmetro de configuração especificado. Se o valor
+for DEFAULT ou RESET for utilizado, a definição específica para o usuário é removida. Usando RESET ALL
+para remover todas as definições específicas do usuário.
+*/
+
+ALTER USER nome RENAME TO novo_nome
+/*
+Muda o nome do usuário
+*/
+
+CREATE GROUP nome_do_grupo;
+/*
+Criando grupo. Pode ser adicionado ou removido usuários de um grupo existente utilizando ALTER GROUP
+*/
+ALTER GROUP nome_do_grupo ADD USER nome_do_usuário;
+/*Adicionando usuário ao grupo*/
+	ALTER GROUP nome_do_grupo DROP USER nome_do_usuário;
+/*Removendo usuário do grupo usando DROP USER*/
+
+DROP GROUP nome_do_grupo;
+/*Apagando grupo, mas não remove os usuários membros do grupo*/
+
+
+/*
+Assim como pode ser modificado o usuário criado no banco de dados, pode ser modificado um grupo.
+*/
+ALTER GROUP nome_do_grupo ADD USER nome_do_usuário;
+	ALTER GROUP nome_do_grupo DROP USER nome_do_usuário;
+	ALTER GROUP nome_do_grupo RENAME TO novo_nome;
+
+/*
+Um CREATE ROLE adiciona um novo papel ao agrupamento. O papel [e uma entidade que pode possuir objetos do
+banco de dados e possuir privilégios. Ele pode ser considerado como um "usuário", "grupo", ou ambos
+O comando CREATE ROLE substitui o comando CREATE USER e CREATE GRUP por possuir mais recursos.
+*/
+
+CREATE ROLE nome [[WITH] opção[...]];
+/*
+OPÇÃO que podem ser utilizadas;
+Nome: nome do papel
+SUPERUSER: determina se o papel é um super-usuário, no qual passa por cima das restrições de acesso
+NOSUPERUSER: papel padrão
+-----------------------------------------------------------------------------------------------------------------
+CREATEDB: permissão para o papel criar banco de dados
+NOCRATEDB: permissão padrão
+-----------------------------------------------------------------------------------------------------------------
+CREATEROLE: Determina que o papel terá permissão para criar novos papéis( ou seja, executar o comando CREATE ROLE)
+NOCREATEROLE: Determinação padrão
+-----------------------------------------------------------------------------------------------------------------
+INHERIT: Determina se o papel herda os privilégios dos papéis dos quais é membro, utilizando privilégios de BD que
+foram concedidos a todos os papéis dos quais é membro direto ou indireto.
+NOINHERIT: Determinação padrão
+-----------------------------------------------------------------------------------------------------------------
+LOGIN: Determina se o papel pode estabelecer uma conexão, o login pode ser considerado como nome do usuário
+NOLOGIN: Determinação padrão
+-----------------------------------------------------------------------------------------------------------------
+CONNECTION LIMIT: Especificação de quantas conexões simultâneas o papel(role) pode estabelecer, -1(o padrão)
+significado sem limite.
+-----------------------------------------------------------------------------------------------------------------
+PASSWORD: Define a senha do papel (só é útil para os papéis que possuem LOGIN)
+-----------------------------------------------------------------------------------------------------------------
+ENCRYPTED: Controla se a senha é armazenada criptografada ou não, em pg_shadow
+UNENCRYPTED: sem criptografia
+ -----------------------------------------------------------------------------------------------------------------
+VALID UNTIL: Define uma data e hora após o qual o papel não é mais válido.
+-----------------------------------------------------------------------------------------------------------------
+IN ROLE: Relaciona 1 ou mais papéis existente, ao qual os novos papéis serão adicionados imediatamente
+IN GROUP: Mesma cousa que IN ROLE
+-----------------------------------------------------------------------------------------------------------------
+ROLE: relaciona 1 ou mais papéis existentes a serem automaticamente adicionados como membro do novo papel 
+(isso tornou o novo papel um grupo)
+ADMIN: Mesma coisa que o role, mas os papéis especificados são adicionados ao novo papel WITH ADMIN OPTION, dando 
+aos mesmos o direito de permitir que outros papéis se tornem membros deste grupo.
+*/
+
+DROP ROLE [IF EXISTS] nome [,...]
+/*
+Remove os papéis especificados
+Ele não pode ser removido caso esteja sendo referenciado em outro banco de dados do agrupamento, assim dando um erro
+Caso tente remover antes de remover o papel, é necessário remover todos os objetos pertencentes, e revogar todos os privilégios
+concedidos pelo papel.
+*/
+
+ALTER ROLE nome [[WITH]opção [...]]
+/*Altera os atributos de um papel*/
+
+ALTER TABLE nome_da_tablea OWNER TO novo_dono
+/*
+Para mudar o dono de uma tabela, índice, sequência ou visão deve ser utilizado o comando ALTER TABLE
+Por padrão somente o dono ou o super-usuário pode fazer alterações com o objeto. 
+Para permitir o uso por outros usuários, devem ser concedidos privilégios.
+*/
+
+/*
+Comando GRANT, ele possui duas funcionalidades básicas: conceder privilégios para um objeto do BD e conceder o privilégio de ser
+membro de um papel, existindo distintos privilégios:
+SELECT: Permite consultar qualquer coluna da tabela, visão ou sequência especificada. Permite usar o comando COPY TO
+INSERT: Permite inserir novas linhas na tabela especificada. Permite utilizar o comando COPY FROM
+UPDATE: Permite modificar dados de qualquer coluna da tabela especificada 
+DELETE: Permite excluir linhas da tabela especificada 
+RULE: Permite criar regras para uma tabela ou uma visão
+REFERENCES: Cria uma restrição de chave estrangeira é necessário possuir privilégio, tanto na tavela que faz a referência, quanto na que é referenciada
+TRIGGER: Permite criar gatilhos na tabela especificada
+CREATE: Permite criar novos esquemas do BD
+TEMPORARY TEMP: Permite a criação de tabela temporária ao usar o BD
+EXECUTE: Permite usar a função especificada e qualquer operador implementado utilizando a função 
+USAGE: Para as linguagens procedurais, permite o usa da linguagem especificada para criar funções. Para esquemas, permite acessar os objetos contidos no esquema especificado
+ALL PRIVILEGES: Concede todos os privilégios
+*/
+
+
+/*EXERCÍCIO*/
+	
+CREATE DATABASE hotel;
+
+
+
+CREATE TABLE cliente
+(
+rg NUMERIC NOT NULL,
+nome VARCHAR(40) NOT NULL,
+sexo CHAR(1) NOT NULL,
+telefone NUMERIC(10,0),
+PRIMARY KEY (rg)
+) WITHOUT OIDS;
+
+
+CREATE TABLE tipo_quarto
+(
+id_tipo SERIAL NOT NULL,
+descricao VARCHAR(40) NOT NULL,
+valor NUMERIC(9,2) NOT NULL,
+PRIMARY KEY (id_tipo)
+) WITHOUT OIDS;
+
+
+CREATE TABLE quarto
+(
+num_quarto INTEGER NOT NULL,
+andar CHAR(10),
+id_tipo INTEGER NOT NULL,
+status CHAR(01) NOT NULL DEFAULT 'D',
+PRIMARY KEY (num_quarto),
+FOREIGN KEY (id_tipo) REFERENCES tipo_quarto (id_tipo)
+ON UPDATE RESTRICT ON DELETE RESTRICT
+) WITHOUT OIDS;
+
+
+CREATE TABLE servico
+(
+id_servico SERIAL NOT NULL,
+descricao VARCHAR(60) NOT NULL,
+valor NUMERIC(9,2) NOT NULL,
+PRIMARY KEY (id_servico)
+) WITHOUT OIDS; /*Identificador de objetos*/
+
+
+CREATE TABLE reserva
+(
+id_reserva SERIAL NOT NULL,
+rg NUMERIC NOT NULL,
+num_quarto INTEGER NOT NULL,
+dt_reserva DATE NOT NULL,
+qtd_dias INTEGER NOT NULL,
+data_entrada DATE NOT NULL,
+status CHAR(1) NOT NULL DEFAULT 'A',
+PRIMARY KEY (id_reserva),
+FOREIGN KEY (rg) REFERENCES cliente (rg)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
+FOREIGN KEY (num_quarto) REFERENCES quarto (num_quarto)
+ON UPDATE RESTRICT ON DELETE RESTRICT
+) WITHOUT OIDS;
+
+
+CREATE TABLE hospedagem
+(
+id_hospedagem SERIAL NOT NULL,
+rg NUMERIC NOT NULL,
+num_quarto INTEGER NOT NULL,
+data_entrada DATE NOT NULL,
+data_saida DATE,
+status CHAR(1) NOT NULL,
+PRIMARY KEY (id_hospedagem),
+FOREIGN KEY (rg) REFERENCES cliente (rg)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
+FOREIGN KEY (num_quarto) REFERENCES quarto (num_quarto)
+ON UPDATE RESTRICT ON DELETE RESTRICT
+) WITHOUT OIDS;
+
+
+CREATE TABLE atendimento
+(
+id_atendimento SERIAL NOT NULL,
+id_servico INTEGER NOT NULL,
+id_hospedagem INTEGER NOT NULL,
+PRIMARY KEY (id_atendimento),
+FOREIGN KEY (id_servico) REFERENCES servico (id_servico)
+ON UPDATE RESTRICT ON DELETE RESTRICT,
+FOREIGN KEY (id_hospedagem) REFERENCES hospedagem (id_hospedagem)
+ON UPDATE RESTRICT ON DELETE RESTRICT
+) WITHOUT OIDS;
+
+
+CREATE OR REPLACE FUNCTION adicionaHospedagem(rg_cliente numeric, numero_quarto int) RETURNS void AS
+  $$
+    begin
+      perform * from cliente where rg = rg_cliente;
+      if found then
+	perform * from quarto where upper(status) = 'D' and num_quarto = numero_quarto;
+	if found then
+	  insert into hospedagem values (default, rg_cliente, numero_quarto, current_date, null, 'A');
+	  update quarto set status = 'O' where num_quarto = numero_quarto;
+	  RAISE NOTICE 'Hospedagem realizada com sucesso!';
+	else
+	  RAISE EXCEPTION 'Quarto indisponivel para hospedagem!'; 
+	end if;
+      else
+	RAISE EXCEPTION 'Cliente nao consta no cadastro!';      
+      end if;    
+    end;
+  $$
+  LANGUAGE plpgsql SECURITY DEFINER;
+
+
+CREATE OR REPLACE FUNCTION adicionaReserva(rg_cliente numeric, numero_quarto int, dias int, data_entrada date) RETURNS void AS
+  $$
+    begin
+      perform * from cliente where rg = rg_cliente;
+      if found then
+        perform * from quarto where upper(status) = 'D' and num_quarto = numero_quarto;
+        if found then
+          insert into reserva values (default, rg_cliente, numero_quarto, current_date, dias, data_entrada, 'A');
+          update quarto set status = 'R' where num_quarto = numero_quarto;
+          RAISE NOTICE 'Reserva realizada com sucesso!';
+        else
+          RAISE EXCEPTION 'Quarto indisponivel para reserva!'; 
+        end if;
+      else
+        RAISE EXCEPTION 'Cliente nao consta no cadastro!';      
+      end if;    
+    end;
+  $$
+  LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION realizaPedido(hosp int, serv int) RETURNS void AS
+  $$
+    begin
+      perform * from hospedagem where upper(status) = 'A' and id_hospedagem = hosp;
+      if found then
+        perform * from servico where id_servico = serv;
+        if found then
+          insert into atendimento values (default, serv, hosp);
+          RAISE NOTICE 'Pedido realizado com sucesso!';
+        else
+          RAISE EXCEPTION 'Servico indisponivel!'; 
+        end if;
+      else
+        RAISE EXCEPTION 'Hospedagem nao consta no cadastro ou ja foi desativada!';     
+      end if;  
+    end;
+  $$
+  LANGUAGE plpgsql SECURITY DEFINER;
+
+/*Criando visão para consultar o nome e sexo do clinte da lista*/
+CREATE VIEW listaClientes (nome_cliente,sexo) AS
+  SELECT nome, sexo FROM cliente
+
+/*Criando um papel para o gerente e os subs funcionarios*/
+CREATE ROLE gerente;
+  CREATE ROLE atendente;
+  CREATE ROLE estagiario;
+
+REVOKE ALL ON FUNCTION adicionaReserva(numeric,int,int,date) FROM PUBLIC;
+  REVOKE ALL ON FUNCTION adicionaHospedagem(numeric,int) FROM PUBLIC;
+  REVOKE ALL ON FUNCTION realizaPedido(int,int) FROM PUBLIC;
+
+
+/*Dando o privilégio de visualizar e inserir novas linhas na tabela e também podera conceder a permissão de SELECT e INSET a outro usuario*/  	
+GRANT SELECT, INSERT ON cliente, reserva, hospedagem, quarto, tipo_quarto, atendimento, servico, listaClientes TO gerente WITH GRANT OPTION;
+
+/**/
+GRANT EXECUTE ON FUNCTION adicionaHospedagem(numeric,int) TO gerente;
+
+/**/	
+GRANT EXECUTE ON FUNCTION adicionaReserva(numeric,int,int,date) TO gerente;
+
+/**/
+GRANT EXECUTE ON FUNCTION realizaPedido(int,int) TO gerente;
+
+/**/
+GRANT SELECT ON listaClientes TO gerente
+
+/**/	
+GRANT EXECUTE ON FUNCTION adicionaHospedagem(numeric,int) TO atendente;
+
+/*ADD*/
+grant select on listaClientes to atendente;
+
+/*RVK*/
+revoke select on listaClientes from atendente;
+
+/**/
+GRANT EXECUTE ON FUNCTION adicionaReserva(numeric,int,int,date) TO atendente;
+
+/**/
+GRANT EXECUTE ON FUNCTION realizaPedido(int,int) TO atendente;
+
+/*Permitindo ao estagiario visualizar a lista de Cliente*/	
+GRANT SELECT ON listaClientes TO estagiario;
+
+/*Criando um usuario com papel, dando sua senha e ligando ela ao papel de gerente*/
+CREATE ROLE tony LOGIN PASSWORD '111' IN ROLE gerente;
+
+/*Criando um usuario com  papel, dando sua senha e ligando ela ao papel de atendente*/	
+CREATE ROLE maria LOGIN PASSWORD '222' IN ROLE atendente;
+
+/*Criando um usuario com  papel, dando sua senha e ligando ela ao papel de estagiaria*/	
+CREATE ROLE vitoria LOGIN PASSWORD '333' IN ROLE estagiario;
+
+drop role vitoria;
+
+
+/*Fim*/
