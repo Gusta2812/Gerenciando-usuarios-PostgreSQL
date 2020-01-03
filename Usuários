@@ -1,0 +1,25 @@
+/*Tony - Gerente*/
+
+insert into quarto values (1, 1, 111, 'D');
+
+select  adicionaReserva(222, 1, 20, '2019-02-03');
+
+select * from listaClientes;
+
+------------------------------------------------------------------------
+/*Maria - Atendente*/
+
+insert into quarto values (1, 1, 111, 'D');
+
+select  adicionaReserva(222, 1, 20, '2019-02-03');
+
+select * from listaClientes;
+
+------------------------------------------------------------------------
+﻿/*Vitoria - Estagiaria*/
+
+insert into quarto values (1, 1, 111, 'D');
+
+select  adicionaReserva(222, 1, 20, '2019-02-03');
+
+select * from listaClientes;
